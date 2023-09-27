@@ -1,2 +1,2 @@
-# Springboot_3_jwt
+# Springboot 3 JWT Auth
 JWT Authentication Implementation
