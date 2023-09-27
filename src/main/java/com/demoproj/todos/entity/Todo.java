@@ -3,8 +3,18 @@ package com.demoproj.todos.entity;
 import java.util.Date;
 import java.util.Objects;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name="todos")
 public class Todo {
-	private long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 	private String username;
 	private String description;
 	private Date targetDate;
@@ -14,7 +24,7 @@ public class Todo {
 		
 	}
 	
-	public Todo(long id, String username, String description, Date targetDate, boolean isCompleted) {
+	public Todo(Long id, String username, String description, Date targetDate, boolean isCompleted) {
 		super();
 		this.id = id;
 		this.username = username;
@@ -26,7 +36,7 @@ public class Todo {
 	public long getId() {
 		return id;
 	}
-	public void setId(long id) {
+	public void setId(Long id) {
 		this.id = id;
 	}
 	public String getUsername() {
@@ -70,6 +80,14 @@ public class Todo {
 		Todo other = (Todo) obj;
 		return id == other.id;
 	}
+
+	@Override
+	public String toString() {
+		return "Todo [id=" + id + ", username=" + username + ", description=" + description + ", targetDate="
+				+ targetDate + ", isCompleted=" + isCompleted + "]";
+	}
+	
+	
 	
 	
 }
