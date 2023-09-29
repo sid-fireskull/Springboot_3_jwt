@@ -50,39 +50,31 @@ public class JwtSecurityConfig {
     MvcRequestMatcher.Builder mvc;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, HandlerMappingIntrospector introspector) throws Exception {
-        
+    SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, HandlerMappingIntrospector introspector) throws Exception {
+
         // h2-console is a servlet 
         // https://github.com/spring-projects/spring-security/issues/12310
          httpSecurity
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(mvc.pattern("/authenticate")).permitAll() // h2-console is a servlet and NOT recommended for a production
-                    .requestMatchers(PathRequest.toH2Console()).permitAll()
-                    .anyRequest()
-                    .authenticated())
-                .csrf().disable()
+                        .requestMatchers(mvc.pattern("/authenticate")).permitAll() // h2-console is a servlet and NOT recommended for a production
+                        .requestMatchers(PathRequest.toH2Console()).permitAll()
+                        .anyRequest()
+                        .authenticated())
+                .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.
-                    sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2ResourceServer(
                         (oauth2) -> oauth2.jwt(Customizer.withDefaults()))
                 .httpBasic(
                         Customizer.withDefaults())
-                .headers(headers -> headers.frameOptions(frameOptionsConfig-> frameOptionsConfig.disable())).cors();
+                .headers(headers -> headers.frameOptions(frameOptionsConfig -> frameOptionsConfig.disable())).cors(Customizer.withDefaults());
                 
          return httpSecurity.build();
-        
-//        http.csrf(AbstractHttpConfigurer::disable)
-//        .authorizeHttpRequests(request -> request.requestMatchers("/api/v1/auth/**")
-//                .permitAll().anyRequest().authenticated())
-//        .sessionManagement(manager -> manager.sessionCreationPolicy(STATELESS))
-//        .authenticationProvider(authenticationProvider()).addFilterBefore(
-//                jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-//        return http.build();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(
-            UserDetailsService userDetailsService) {
+    AuthenticationManager authenticationManager(
+             UserDetailsService userDetailsService) {
         var authenticationProvider = new DaoAuthenticationProvider();
         authenticationProvider.setUserDetailsService(userDetailsService);
         authenticationProvider.setPasswordEncoder(getPasswordEncoder());
@@ -90,7 +82,7 @@ public class JwtSecurityConfig {
     }
 
     @Bean
-    public UserDetailsService userDetailsService() {
+    UserDetailsService userDetailsService() {
         UserDetails user = User.withUsername("john")
                                 .password("$2a$10$3zHzb.Npv1hfZbLEU5qsdOju/tk2je6W6PnNnY.c1ujWPcZh4PL6e")
                                 .authorities("read")
@@ -101,7 +93,7 @@ public class JwtSecurityConfig {
     }
 
     @Bean
-    public JWKSource<SecurityContext> jwkSource() {
+    JWKSource<SecurityContext> jwkSource() {
         JWKSet jwkSet = new JWKSet(rsaKey());
         return (((jwkSelector, securityContext) 
                         -> jwkSelector.select(jwkSet)));
@@ -118,9 +110,9 @@ public class JwtSecurityConfig {
                 .withPublicKey(rsaKey().toRSAPublicKey())
                 .build();
     }
-    
+
     @Bean
-    public RSAKey rsaKey() {
+    RSAKey rsaKey() {
         
         KeyPair keyPair = keyPair();
         
@@ -132,7 +124,7 @@ public class JwtSecurityConfig {
     }
 
     @Bean
-    public KeyPair keyPair() {
+    KeyPair keyPair() {
         try {
             var keyPairGenerator = KeyPairGenerator.getInstance("RSA");
             keyPairGenerator.initialize(2048);
