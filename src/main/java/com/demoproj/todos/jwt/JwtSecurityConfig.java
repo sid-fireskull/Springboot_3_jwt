@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -18,8 +17,6 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -46,28 +43,30 @@ import com.nimbusds.jose.proc.SecurityContext;
 @EnableMethodSecurity
 public class JwtSecurityConfig {
 	
-	@Autowired
-    MvcRequestMatcher.Builder mvc;
 
+	
+	@Bean
+	MvcRequestMatcher.Builder mvc(HandlerMappingIntrospector introspector)
+	{
+		return new MvcRequestMatcher.Builder(introspector);
+	}
+	
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, HandlerMappingIntrospector introspector) throws Exception {
-
-        // h2-console is a servlet 
-        // https://github.com/spring-projects/spring-security/issues/12310
+    SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, HandlerMappingIntrospector introspector, MvcRequestMatcher.Builder mvc) throws Exception {  	
          httpSecurity
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(mvc.pattern("/authenticate")).permitAll() // h2-console is a servlet and NOT recommended for a production
-                        .requestMatchers(PathRequest.toH2Console()).permitAll()
-                        .anyRequest()
-                        .authenticated())
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.
-                        sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .oauth2ResourceServer(
-                        (oauth2) -> oauth2.jwt(Customizer.withDefaults()))
-                .httpBasic(
-                        Customizer.withDefaults())
-                .headers(headers -> headers.frameOptions(frameOptionsConfig -> frameOptionsConfig.disable())).cors(Customizer.withDefaults());
+                .requestMatchers(mvc.pattern("/authenticate")).permitAll() // h2-console is a servlet and NOT recommended for a production
+                .requestMatchers(PathRequest.toH2Console()).permitAll()
+                .anyRequest()
+                .authenticated());
+        // CSRF Token Disabled
+        httpSecurity.csrf(csrf -> csrf.disable());
+        // Set Session To Stateless
+        httpSecurity.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        // Allow Frames from sameorigin
+        httpSecurity.headers(headers -> headers.frameOptions(frameOptionsConfig -> frameOptionsConfig.disable()));
+//        httpSecurity.cors(Customizer.withDefaults());
+        httpSecurity.oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()));
                 
          return httpSecurity.build();
     }
@@ -77,15 +76,16 @@ public class JwtSecurityConfig {
              UserDetailsService userDetailsService) {
         var authenticationProvider = new DaoAuthenticationProvider();
         authenticationProvider.setUserDetailsService(userDetailsService);
-        authenticationProvider.setPasswordEncoder(getPasswordEncoder());
+      //  authenticationProvider.setPasswordEncoder(getPasswordEncoder());
         return new ProviderManager(authenticationProvider);
     }
 
     @Bean
     UserDetailsService userDetailsService() {
         UserDetails user = User.withUsername("john")
-                                .password("$2a$10$3zHzb.Npv1hfZbLEU5qsdOju/tk2je6W6PnNnY.c1ujWPcZh4PL6e")
-                                .authorities("read")
+                               // .password("$2a$10$3zHzb.Npv1hfZbLEU5qsdOju/tk2je6W6PnNnY.c1ujWPcZh4PL6e")
+                                .password("{noop}wick")
+        						.authorities("read")
                                 .roles("USER")
                                 .build();
 
@@ -134,11 +134,12 @@ public class JwtSecurityConfig {
                     "Unable to generate an RSA Key Pair", e);
         }
     }
-    
-    @Bean
-    PasswordEncoder getPasswordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+   
+//	  Defining Custom Password Encoder    
+//    @Bean
+//    PasswordEncoder getPasswordEncoder() {
+//        return new BCryptPasswordEncoder();
+//    }
     
 }
 
